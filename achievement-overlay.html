@@ -16,6 +16,25 @@
     --toast-accent-bright:#3fae20;
     --toast-accent:#107c10;
     --toast-accent-deep:#0b4f0b;
+
+    /* Sized off vmin (the smaller viewport dimension) with clamp() floors/
+       ceilings, instead of fixed px — so the toast scales with whatever
+       resolution the OBS browser source is set to (1080p, 1440p, a small
+       preview window, etc.) rather than staying a fixed pixel size that
+       reads as tiny on a large canvas. */
+    --toast-badge:clamp(56px, 8.9vmin, 140px);
+    --toast-icon:clamp(22px, 3.7vmin, 58px);
+    --toast-height:clamp(56px, 9.3vmin, 145px);
+    --toast-height-viewer:clamp(64px, 10.6vmin, 165px);
+    --toast-gap:clamp(10px, 1.94vmin, 26px);
+    --toast-pad:clamp(12px, 2.22vmin, 30px);
+    --toast-fs-eyebrow:clamp(9px, 1.46vmin, 22px);
+    --toast-fs-title:clamp(15px, 2.5vmin, 38px);
+    --toast-fs-viewer:clamp(9px, 1.53vmin, 24px);
+    --toast-fs-score:clamp(16px, 2.64vmin, 40px);
+    --toast-gem:clamp(9px, 1.67vmin, 26px);
+    --toast-score-gap:clamp(5px, .97vmin, 14px);
+    --toast-score-pad:clamp(10px, 1.94vmin, 26px);
   }
   *{box-sizing:border-box;}
   html, body{
@@ -236,37 +255,35 @@
     top:50%;
     display:flex;
     align-items:center;
-    height:64px;
-    width:64px;
-    border-radius:32px;
+    width:min(clamp(260px, 32vw, 900px), calc(100% - 40px));
+    height:var(--toast-height);
+    border-radius:calc(var(--toast-height) / 2);
     overflow:hidden;
     background:linear-gradient(165deg,var(--toast-accent-bright) 0%, var(--toast-accent) 45%, var(--toast-accent-deep) 100%);
-    box-shadow:0 12px 24px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.22);
+    box-shadow:0 1.6vmin 3.3vmin -1.6vmin rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.22);
     transform:translate(-50%,-50%) scale(1);
     opacity:1;
-    /* width/height/border-radius force a repaint every frame — without OBS's
-       browser-source hardware acceleration that repaint is CPU-bound, so this
-       is the main jank source. `contain` scopes that repaint to just this box
-       instead of the engine re-checking siblings/ancestors, and a lighter
-       box-shadow blur cuts the per-frame raster cost. transform/opacity below
-       stay compositor-only regardless of hardware acceleration, so those are
-       "free" by comparison. */
-    contain:layout paint style;
-    will-change:width, height, border-radius, transform, opacity;
+    /* The box is ALWAYS full pill size — the circle-to-pill "morph" is done
+       by animating clip-path (a small circle over the badge, growing to
+       cover the whole pill) instead of width/height/border-radius. Unlike
+       those, clip-path/transform/opacity never trigger layout or a full
+       repaint — they're compositor-only, so this stays smooth on CPU-only
+       rendering regardless of OBS's hardware-acceleration setting or the
+       browser source's FPS. */
+    clip-path:circle(calc(var(--toast-badge) / 2) at calc(var(--toast-badge) / 2) 50%);
+    will-change:clip-path, transform, opacity;
     transition:
-      width 420ms cubic-bezier(.32,.85,.32,1),
-      height 420ms cubic-bezier(.32,.85,.32,1),
-      border-radius 420ms cubic-bezier(.32,.85,.32,1),
+      clip-path 420ms cubic-bezier(.32,.85,.32,1),
       transform 260ms ease,
       opacity 260ms ease,
       background 200ms ease;
   }
+  .toast.has-viewer{ height:var(--toast-height-viewer); }
   .toast.expanded{
-    width:min(420px, calc(100% - 40px));
-    height:68px;
-    border-radius:34px;
+    /* 150vmax is always bigger than the pill's diagonal at any resolution or
+       aspect ratio, so it fully covers the pill regardless of canvas size. */
+    clip-path:circle(150vmax at calc(var(--toast-badge) / 2) 50%);
   }
-  .toast.expanded.has-viewer{ height:78px; }
   .toast.hidden{
     opacity:0;
     transform:translate(-50%,-50%) scale(.55);
@@ -277,21 +294,20 @@
 
   .toast-badge{
     position:relative;
-    flex:0 0 64px;
-    width:64px;
-    height:64px;
+    flex:0 0 var(--toast-badge);
+    width:var(--toast-badge);
+    height:var(--toast-badge);
     display:flex;
     align-items:center;
     justify-content:center;
-    align-self:flex-start;
+    align-self:center;
     /* Filter lives here, on the non-animating parent, rather than on the
        spinning svg — computed once instead of every frame of the spin. */
     filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));
   }
-  .toast.expanded .toast-badge{ align-self:center; }
   .toast-badge svg{
-    width:27px;
-    height:27px;
+    width:var(--toast-icon);
+    height:var(--toast-icon);
     fill:#fff;
     display:block;
     /* Plain white vector fill — no emoji font / color-font dependency, so it
@@ -319,8 +335,8 @@
   .toast-content{
     display:flex;
     align-items:center;
-    gap:14px;
-    padding-right:16px;
+    gap:var(--toast-gap);
+    padding-right:var(--toast-pad);
     min-width:0;
     flex:1 1 auto;
     opacity:0;
@@ -334,7 +350,7 @@
   .toast-text{ display:flex; flex-direction:column; gap:1px; min-width:0; }
   .toast-eyebrow{
     margin:0;
-    font-size:10.5px;
+    font-size:var(--toast-fs-eyebrow);
     font-weight:700;
     letter-spacing:.11em;
     text-transform:uppercase;
@@ -345,7 +361,7 @@
     margin:0;
     font-family:'Rajdhani',system-ui,sans-serif;
     font-weight:700;
-    font-size:18px;
+    font-size:var(--toast-fs-title);
     line-height:1.2;
     color:#fff;
     white-space:nowrap;
@@ -355,7 +371,7 @@
   .toast.dark-text .toast-title{ color:#141208; }
   .toast-viewer{
     margin:1px 0 0;
-    font-size:11px;
+    font-size:var(--toast-fs-viewer);
     font-weight:600;
     color:rgba(255,255,255,.75);
     white-space:nowrap;
@@ -368,9 +384,9 @@
   .toast-score{
     display:flex;
     align-items:center;
-    gap:7px;
+    gap:var(--toast-score-gap);
     margin-left:auto;
-    padding-left:14px;
+    padding-left:var(--toast-score-pad);
     flex:0 0 auto;
     border-left:1px solid rgba(255,255,255,.3);
   }
@@ -378,14 +394,14 @@
   .score-value{
     font-family:'Rajdhani',system-ui,sans-serif;
     font-weight:700;
-    font-size:19px;
+    font-size:var(--toast-fs-score);
     color:#fff;
     font-variant-numeric:tabular-nums;
   }
   .toast.dark-text .score-value{ color:#141208; }
   .gem{
-    width:12px;
-    height:12px;
+    width:var(--toast-gem);
+    height:var(--toast-gem);
     flex:0 0 auto;
     background:#fff;
     border-radius:2px;
