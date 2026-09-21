@@ -1,0 +1,922 @@
+<title>Achievement Unlocked</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e0e10;
+    --bg-elev:#18181b;
+    --bg-input:#1f1f23;
+    --border:#2d2d35;
+    --text:#efeff1;
+    --text-muted:#adadb8;
+    --accent:#9147ff;
+    --accent-hover:#772ce8;
+    --danger:#eb0400;
+    --toast-accent-bright:#3fae20;
+    --toast-accent:#107c10;
+    --toast-accent-deep:#0b4f0b;
+  }
+  *{box-sizing:border-box;}
+  html, body{
+    margin:0;
+    height:100vh;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-size:13px;
+    line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+  @supports (height:100dvh){ html, body{ height:100dvh; } }
+  body{ display:flex; flex-direction:column; overflow:hidden; }
+
+  /* ---------- header + settings popover ---------- */
+  header{
+    background:var(--bg-elev);
+    border-bottom:1px solid var(--border);
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+    flex-wrap:wrap;
+  }
+  header h1{
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-right:auto;
+  }
+
+  button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:7px 14px;
+    border-radius:4px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  button:hover{ background:var(--accent-hover); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  button.secondary{ background:var(--bg-input); color:var(--text); border:1px solid var(--border); }
+  button.secondary:hover{ background:var(--border); }
+  button.danger{ background:transparent; color:#ff6a66; border:1px solid #5a2422; }
+  button.danger:hover{ background:rgba(235,4,0,.12); }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .menu-wrapper{ position:relative; }
+  #settings-btn{ font-size:18px; line-height:1; padding:6px 12px; min-width:38px; }
+  #settings-btn.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  #settings-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    background:var(--bg-elev);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.55);
+    z-index:100;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    width:320px;
+    max-height:min(620px, calc(100vh - 90px));
+    overflow-y:auto;
+  }
+  #settings-menu[hidden]{ display:none; }
+  .menu-section{ display:flex; flex-direction:column; gap:6px; }
+  .menu-section-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-muted);
+    font-weight:700;
+    padding:0 2px 2px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:4px;
+  }
+  .menu-section-title .count{ font-weight:600; opacity:.7; text-transform:none; letter-spacing:0; }
+  .menu-row{ display:flex; gap:6px; }
+  .menu-row button{ flex:1; padding:8px 10px; font-size:13px; text-align:center; }
+  .menu-label{ font-size:11px; color:var(--text-muted); margin-top:4px; }
+  .menu-input, .menu-select{
+    width:100%;
+    background:var(--bg-input);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:7px 10px;
+    font-size:12px;
+    outline:none;
+    font-family:inherit;
+  }
+  .menu-input:focus, .menu-select:focus{ border-color:var(--accent); }
+  .menu-color{ width:100%; height:36px; padding:3px; background:var(--bg-input); border:1px solid var(--border); border-radius:4px; cursor:pointer; }
+  .menu-range{ width:100%; accent-color:var(--accent); margin:2px 0 4px; cursor:pointer; }
+  .menu-help{ font-size:11px; color:var(--text-muted); line-height:1.5; margin:2px 0 0; }
+  .menu-help code, .menu-help pre{
+    font-family:ui-monospace,'SFMono-Regular',Consolas,monospace;
+    font-size:10.5px;
+    background:var(--bg-input);
+    border:1px solid var(--border);
+    border-radius:3px;
+    color:var(--text);
+  }
+  .menu-help code{ padding:1px 4px; }
+  .menu-help pre{ display:block; padding:8px; margin:4px 0 0; overflow-x:auto; white-space:pre; }
+  details.menu-details{ font-size:11px; color:var(--text-muted); }
+  details.menu-details summary{ cursor:pointer; color:var(--text); font-weight:600; padding:2px 0; }
+  details.menu-details summary:hover{ color:var(--accent); }
+
+  #soundOnBtn.active, #overlay-btn.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+
+  .ws-status{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-muted); font-weight:600; margin-top:2px; }
+  .ws-dot{ width:8px; height:8px; border-radius:50%; background:#555; flex:0 0 auto; }
+  .ws-status[data-state="connecting"] .ws-dot{ background:#f5a623; animation:pulse 1s infinite; }
+  .ws-status[data-state="connected"] .ws-dot{ background:#00d26a; }
+  .ws-status[data-state="error"] .ws-dot{ background:var(--danger); }
+  @keyframes pulse{ 50%{ opacity:.3; } }
+
+  /* ---------- stage: the actual overlay canvas ---------- */
+  #stage-wrapper{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 15% 10%, #0d1a10 0%, transparent 55%),
+      radial-gradient(120% 90% at 85% 15%, #160b22 0%, transparent 55%),
+      radial-gradient(140% 100% at 50% 100%, #0a1622 0%, transparent 60%),
+      linear-gradient(180deg,#070a0d 0%, #05070a 100%);
+  }
+  #stage-wrapper::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size:48px 48px;
+    opacity:.35;
+    mask-image:radial-gradient(80% 70% at 50% 30%, black 40%, transparent 100%);
+  }
+  .stage-tiles{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    display:flex;
+    gap:10px;
+    padding:0 18px 18px;
+    filter:blur(.5px) saturate(.9);
+    opacity:.55;
+  }
+  .stage-tiles span{
+    flex:1 1 0;
+    aspect-ratio:1.4/1;
+    max-width:120px;
+    border-radius:6px;
+    background:linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
+    border:1px solid var(--border);
+  }
+  .stage-tiles span:nth-child(1){background:linear-gradient(160deg,#1c3a26,#0d1a12);}
+  .stage-tiles span:nth-child(2){background:linear-gradient(160deg,#1a2b3d,#0c141c);}
+  .stage-tiles span:nth-child(3){background:linear-gradient(160deg,#2a1c3a,#150d1e);}
+  .stage-tiles span:nth-child(4){background:linear-gradient(160deg,#3a2a1c,#1e150d);}
+
+  .stage-disclaimer{
+    position:absolute;
+    left:50%;
+    bottom:10px;
+    transform:translateX(-50%);
+    margin:0;
+    padding:0 16px;
+    font-size:11px;
+    color:var(--text-muted);
+    opacity:.65;
+    text-align:center;
+    pointer-events:none;
+  }
+
+  /* ---------- overlay mode: transparent OBS browser-source background ---------- */
+  html.overlay-mode, body.overlay-mode{ background:transparent; }
+  body.overlay-mode header{
+    background:rgba(24,24,27,.15);
+    border-bottom-color:transparent;
+    transition:background .15s ease;
+  }
+  body.overlay-mode header:hover{ background:rgba(24,24,27,.92); }
+  body.overlay-mode header > *:not(.menu-wrapper){
+    opacity:0;
+    transition:opacity .15s ease;
+    pointer-events:none;
+  }
+  body.overlay-mode header:hover > *{ opacity:1; pointer-events:auto; }
+  body.overlay-mode #stage-wrapper{ background:rgba(14,14,16, var(--overlay-bg-opacity, 0)); }
+  body.overlay-mode #stage-wrapper::before,
+  body.overlay-mode .stage-tiles,
+  body.overlay-mode .stage-disclaimer{ display:none; }
+
+  /* ---------- the toast ---------- */
+  .toast{
+    position:absolute;
+    left:50%;
+    top:50%;
+    display:flex;
+    align-items:center;
+    height:64px;
+    width:64px;
+    border-radius:32px;
+    overflow:hidden;
+    background:linear-gradient(165deg,var(--toast-accent-bright) 0%, var(--toast-accent) 45%, var(--toast-accent-deep) 100%);
+    box-shadow:0 12px 24px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.22);
+    transform:translate(-50%,-50%) scale(1);
+    opacity:1;
+    /* width/height/border-radius force a repaint every frame — without OBS's
+       browser-source hardware acceleration that repaint is CPU-bound, so this
+       is the main jank source. `contain` scopes that repaint to just this box
+       instead of the engine re-checking siblings/ancestors, and a lighter
+       box-shadow blur cuts the per-frame raster cost. transform/opacity below
+       stay compositor-only regardless of hardware acceleration, so those are
+       "free" by comparison. */
+    contain:layout paint style;
+    will-change:width, height, border-radius, transform, opacity;
+    transition:
+      width 420ms cubic-bezier(.32,.85,.32,1),
+      height 420ms cubic-bezier(.32,.85,.32,1),
+      border-radius 420ms cubic-bezier(.32,.85,.32,1),
+      transform 260ms ease,
+      opacity 260ms ease,
+      background 200ms ease;
+  }
+  .toast.expanded{
+    width:min(420px, calc(100% - 40px));
+    height:68px;
+    border-radius:34px;
+  }
+  .toast.expanded.has-viewer{ height:78px; }
+  .toast.hidden{
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.55);
+  }
+  @media (prefers-reduced-motion:reduce){
+    .toast{ transition-duration:1ms; }
+  }
+
+  .toast-badge{
+    position:relative;
+    flex:0 0 64px;
+    width:64px;
+    height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    align-self:flex-start;
+    /* Filter lives here, on the non-animating parent, rather than on the
+       spinning svg — computed once instead of every frame of the spin. */
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));
+  }
+  .toast.expanded .toast-badge{ align-self:center; }
+  .toast-badge svg{
+    width:27px;
+    height:27px;
+    fill:#fff;
+    display:block;
+    /* Plain white vector fill — no emoji font / color-font dependency, so it
+       renders identically everywhere (including OBS's bundled CEF browser,
+       which doesn't reliably resolve system color-emoji fonts). */
+  }
+  .toast.spinning .toast-badge svg{
+    /* Plain 2D scale/rotate instead of a 3D rotateY flip: no perspective
+       projection to recompute and no foreshortening, so the shape driving the
+       drop-shadow above stays simple every frame — much cheaper without
+       hardware-accelerated rasterization. transform itself is always
+       compositor-only, so this animates smoothly either way. */
+    animation:badgePop 480ms cubic-bezier(.34,1.56,.64,1);
+    will-change:transform;
+  }
+  @keyframes badgePop{
+    from{ transform:scale(.3) rotate(-25deg); }
+    60%{ transform:scale(1.18) rotate(8deg); }
+    to{ transform:scale(1) rotate(0deg); }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .toast.spinning .toast-badge svg{ animation-duration:1ms; }
+  }
+
+  .toast-content{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding-right:16px;
+    min-width:0;
+    flex:1 1 auto;
+    opacity:0;
+    transition:opacity 200ms ease 40ms;
+  }
+  .toast.content-visible .toast-content{ opacity:1; }
+  @media (prefers-reduced-motion:reduce){
+    .toast-content{ transition-duration:1ms; }
+  }
+
+  .toast-text{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .toast-eyebrow{
+    margin:0;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.85);
+  }
+  .toast.dark-text .toast-eyebrow{ color:rgba(10,10,8,.78); }
+  .toast-title{
+    margin:0;
+    font-family:'Rajdhani',system-ui,sans-serif;
+    font-weight:700;
+    font-size:18px;
+    line-height:1.2;
+    color:#fff;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .toast.dark-text .toast-title{ color:#141208; }
+  .toast-viewer{
+    margin:1px 0 0;
+    font-size:11px;
+    font-weight:600;
+    color:rgba(255,255,255,.75);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .toast.dark-text .toast-viewer{ color:rgba(20,18,8,.72); }
+  .toast-viewer:empty{ display:none; }
+
+  .toast-score{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-left:auto;
+    padding-left:14px;
+    flex:0 0 auto;
+    border-left:1px solid rgba(255,255,255,.3);
+  }
+  .toast.dark-text .toast-score{ border-left-color:rgba(0,0,0,.25); }
+  .score-value{
+    font-family:'Rajdhani',system-ui,sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:#fff;
+    font-variant-numeric:tabular-nums;
+  }
+  .toast.dark-text .score-value{ color:#141208; }
+  .gem{
+    width:12px;
+    height:12px;
+    flex:0 0 auto;
+    background:#fff;
+    border-radius:2px;
+    transform:rotate(45deg);
+    box-shadow:inset 0 0 0 2px var(--toast-accent-deep);
+  }
+  .toast.dark-text .gem{
+    background:#141208;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.55);
+  }
+
+  @media (max-width:480px){
+    #settings-menu{ width:calc(100vw - 24px); left:0; }
+    header h1{ font-size:13px; }
+  }
+</style>
+
+<header>
+  <div class="menu-wrapper">
+    <button type="button" id="settings-btn" class="secondary" aria-haspopup="true" aria-expanded="false" aria-label="Settings">☰</button>
+    <div id="settings-menu" hidden role="menu">
+
+      <div class="menu-section">
+        <div class="menu-section-title">Preview</div>
+        <label class="menu-label" for="achTitle">Achievement name</label>
+        <input type="text" id="achTitle" class="menu-input" value="Welcome Back" maxlength="48" autocomplete="off" spellcheck="false">
+        <label class="menu-label" for="achScore">Gamerscore</label>
+        <input type="number" id="achScore" class="menu-input" value="25" min="5" max="500" step="5">
+        <label class="menu-label" for="achColor">Accent color</label>
+        <input type="color" id="achColor" class="menu-color" value="#107c10">
+        <div class="menu-row">
+          <button type="button" id="soundOnBtn" class="secondary" title="Play the unlock chime">Chime</button>
+        </div>
+        <div class="menu-row">
+          <button type="button" id="fireBtn">Trigger preview</button>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-section-title">Display</div>
+        <div class="menu-row">
+          <button type="button" id="overlay-btn" class="secondary" title="Transparent overlay mode (for OBS browser source)">Overlay</button>
+        </div>
+        <label class="menu-label" for="overlay-opacity">Overlay background opacity</label>
+        <input type="range" id="overlay-opacity" class="menu-range" min="0" max="100" step="5" value="0" title="Darkens the stage background in overlay mode for legibility">
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-section-title">Streamer.bot</div>
+        <label class="menu-label" for="wsUrl">WebSocket URL</label>
+        <input type="text" id="wsUrl" class="menu-input" value="ws://127.0.0.39:8080/" autocomplete="off" spellcheck="false">
+        <div class="menu-row">
+          <button type="button" id="wsToggle" class="secondary">Connect</button>
+        </div>
+        <span class="ws-status" id="wsStatus" data-state="idle"><span class="ws-dot"></span><span id="wsStatusText">Disconnected</span></span>
+        <p class="menu-help">Streamer.bot owns all triggering — chat phrases, subs, follows, redemptions, whatever. Whenever it decides an achievement unlocked, broadcast this shape over the WebSocket and the overlay just renders it:</p>
+        <pre>CPH.WebsocketBroadcastJson(
+  "{\"achievementName\":\"" + achievementName + "\"," +
+  "\"unlockedBy\":\"" + user + "\"," +
+  "\"points\":" + points + "," +
+  "\"color\":\"" + color + "\"}"
+);</pre>
+        <p class="menu-help"><code>achievementName</code>, <code>unlockedBy</code>, and <code>points</code> populate the toast text. <code>color</code> sets its accent (hex, with or without the leading <code>#</code>) — omit it to use the preview color above.</p>
+        <p class="menu-help">This claude.ai preview is sandboxed and can't reach your local network — save the file and run it as an OBS Browser Source for live connections to work.</p>
+      </div>
+
+    </div>
+  </div>
+  <h1>Achievement Overlay</h1>
+</header>
+
+<div id="stage-wrapper">
+  <div class="toast expanded content-visible" id="toast" role="status" aria-live="polite">
+    <div class="toast-badge">
+      <svg id="toastGlyph" viewBox="0 0 576 512" aria-hidden="true"><path d="M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 28.7-64 64v8c0 4.4 3.6 8 8 8h304c4.4 0 8-3.6 8-8v-8c0-35.3-28.7-64-64-64h-48v-72s36.7-21.5 68.1-73.6c40.2-4.6 78.5-19 110-41.7C553.5 216.4 576 179.7 576 144V88c0-13.3-10.7-24-24-24zM99.3 192.6C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-4.8-29.5-11.8-41.7-21.6zM512 144c0 11.6-10.9 31.2-35.3 48.6-12.2 9.8-26.6 16.8-41.7 21.6 7-25 11.8-53.6 12.8-86.2H512v16z"/></svg>
+    </div>
+    <div class="toast-content">
+      <div class="toast-text">
+        <p class="toast-eyebrow" id="toastEyebrow">Achievement unlocked</p>
+        <p class="toast-title" id="toastTitle">Welcome Back</p>
+        <p class="toast-viewer" id="toastViewer"></p>
+      </div>
+      <div class="toast-score">
+        <span class="score-value" id="toastScore">25</span>
+        <span class="gem" aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+  <div class="stage-tiles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <p class="stage-disclaimer">A hand-built recreation of the Xbox achievement toast for fun and reference — not affiliated with or endorsed by Microsoft or Xbox.</p>
+</div>
+
+<audio id="achievementSound" preload="auto" src="Xbox%20Achievement%20with%20sound.mp3"></audio>
+
+<script>
+(function(){
+  var toast = document.getElementById('toast');
+  var toastEyebrow = document.getElementById('toastEyebrow');
+  var toastTitle = document.getElementById('toastTitle');
+  var toastViewer = document.getElementById('toastViewer');
+  var toastScore = document.getElementById('toastScore');
+
+  var fireBtn = document.getElementById('fireBtn');
+  var achTitle = document.getElementById('achTitle');
+  var achScore = document.getElementById('achScore');
+  var achColor = document.getElementById('achColor');
+  var soundOnBtn = document.getElementById('soundOnBtn');
+
+  var wsUrlInput = document.getElementById('wsUrl');
+  var wsToggle = document.getElementById('wsToggle');
+  var wsStatus = document.getElementById('wsStatus');
+  var wsStatusText = document.getElementById('wsStatusText');
+
+  var overlayBtn = document.getElementById('overlay-btn');
+  var overlayOpacityInput = document.getElementById('overlay-opacity');
+  var settingsBtn = document.getElementById('settings-btn');
+  var settingsMenu = document.getElementById('settings-menu');
+
+  /* ---------- settings persistence: URL param -> localStorage -> default ---------- */
+  var PREFIX = 'xbox-achievement-overlay-';
+  var KEYS = {
+    title: PREFIX + 'title', score: PREFIX + 'score', color: PREFIX + 'color',
+    sound: PREFIX + 'sound',
+    overlay: PREFIX + 'overlay', overlayOpacity: PREFIX + 'overlay-opacity',
+    wsUrl: PREFIX + 'ws-url'
+  };
+  var URL_ALIAS = {
+    title:'title', score:'score', color:'color', sound:'sound',
+    overlay:'overlay', overlayOpacity:'overlayOpacity', wsUrl:'wsUrl'
+  };
+  var QS = new URLSearchParams(location.search);
+  function getSetting(name){
+    var alias = URL_ALIAS[name];
+    if (alias && QS.has(alias)) return QS.get(alias);
+    try { return localStorage.getItem(KEYS[name]); } catch(e){ return null; }
+  }
+  function saveSetting(name, value){
+    try { localStorage.setItem(KEYS[name], value); } catch(e){ /* ignore */ }
+  }
+
+  /* ---------- settings popover: open/close, click-outside + Escape ---------- */
+  function setSettingsOpen(open){
+    settingsMenu.hidden = !open;
+    settingsBtn.classList.toggle('active', open);
+    settingsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  settingsBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    setSettingsOpen(settingsMenu.hidden);
+  });
+  document.addEventListener('click', function(e){
+    if (settingsMenu.hidden) return;
+    if (settingsMenu.contains(e.target) || settingsBtn.contains(e.target)) return;
+    setSettingsOpen(false);
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !settingsMenu.hidden) setSettingsOpen(false);
+  });
+
+  /* ---------- restore preview fields ---------- */
+  var savedTitle = getSetting('title'); if (savedTitle) achTitle.value = savedTitle;
+  var savedScore = getSetting('score'); if (savedScore) achScore.value = savedScore;
+  var savedColor = getSetting('color'); if (savedColor) achColor.value = savedColor;
+  achTitle.addEventListener('input', function(){ saveSetting('title', achTitle.value); });
+  achScore.addEventListener('input', function(){ saveSetting('score', achScore.value); });
+  achColor.addEventListener('input', function(){ saveSetting('color', achColor.value); });
+
+  var soundOn = getSetting('sound') !== '0';
+  soundOnBtn.classList.toggle('active', soundOn);
+  soundOnBtn.addEventListener('click', function(){
+    soundOn = !soundOn;
+    soundOnBtn.classList.toggle('active', soundOn);
+    saveSetting('sound', soundOn ? '1' : '0');
+  });
+
+  /* ---------- overlay mode (transparent OBS browser source) ---------- */
+  function setOverlayMode(on){
+    document.documentElement.classList.toggle('overlay-mode', on);
+    document.body.classList.toggle('overlay-mode', on);
+    overlayBtn.classList.toggle('active', on);
+  }
+  if (getSetting('overlay') === '1') setOverlayMode(true);
+  overlayBtn.addEventListener('click', function(){
+    var on = !document.body.classList.contains('overlay-mode');
+    setOverlayMode(on);
+    saveSetting('overlay', on ? '1' : '0');
+  });
+
+  var overlayOpacity = parseInt(getSetting('overlayOpacity'), 10);
+  if (!isFinite(overlayOpacity) || overlayOpacity < 0 || overlayOpacity > 100) overlayOpacity = 0;
+  overlayOpacityInput.value = String(overlayOpacity);
+  document.documentElement.style.setProperty('--overlay-bg-opacity', String(overlayOpacity / 100));
+  overlayOpacityInput.addEventListener('input', function(){
+    var v = parseInt(overlayOpacityInput.value, 10);
+    if (!isFinite(v)) return;
+    overlayOpacity = Math.max(0, Math.min(100, v));
+    document.documentElement.style.setProperty('--overlay-bg-opacity', String(overlayOpacity / 100));
+    saveSetting('overlayOpacity', String(overlayOpacity));
+  });
+
+  var savedWsUrl = getSetting('wsUrl');
+  if (savedWsUrl) wsUrlInput.value = savedWsUrl;
+  wsUrlInput.addEventListener('change', function(){ saveSetting('wsUrl', wsUrlInput.value); });
+
+  /* ---------- color helpers ---------- */
+  function hexToRgb(hex){
+    hex = String(hex || '').replace('#','').trim();
+    if (hex.length === 3) hex = hex.split('').map(function(c){ return c + c; }).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+    var num = parseInt(hex, 16);
+    return { r:(num >> 16) & 255, g:(num >> 8) & 255, b:num & 255 };
+  }
+  function rgbToHex(r, g, b){
+    return '#' + [r, g, b].map(function(v){
+      var h = Math.max(0, Math.min(255, Math.round(v))).toString(16);
+      return h.length === 1 ? '0' + h : h;
+    }).join('');
+  }
+  function rgbToHsl(r, g, b){
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return { h:h, s:s, l:l };
+  }
+  function hslToRgb(h, s, l){
+    if (s === 0) { var v = l * 255; return { r:v, g:v, b:v }; }
+    function hue2rgb(p, q, t){
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    }
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    return {
+      r:hue2rgb(p, q, h + 1/3) * 255,
+      g:hue2rgb(p, q, h) * 255,
+      b:hue2rgb(p, q, h - 1/3) * 255
+    };
+  }
+  function clamp01(v){ return Math.min(1, Math.max(0, v)); }
+  function relativeLuminance(rgb){
+    function chan(c){ c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    return 0.2126 * chan(rgb.r) + 0.7152 * chan(rgb.g) + 0.0722 * chan(rgb.b);
+  }
+  function applyAccentColor(hex){
+    var rgb = hexToRgb(hex) || hexToRgb('#107c10');
+    var hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    var bright = hslToRgb(hsl.h, clamp01(hsl.s * 0.9 + 0.05), clamp01(hsl.l + 0.22));
+    var deep = hslToRgb(hsl.h, hsl.s, clamp01(hsl.l - 0.26));
+    toast.style.setProperty('--toast-accent-bright', rgbToHex(bright.r, bright.g, bright.b));
+    toast.style.setProperty('--toast-accent', rgbToHex(rgb.r, rgb.g, rgb.b));
+    toast.style.setProperty('--toast-accent-deep', rgbToHex(deep.r, deep.g, deep.b));
+    toast.classList.toggle('dark-text', relativeLuminance(rgb) > 0.5);
+  }
+
+  /* ---------- toast cycle: queue-driven so back-to-back unlocks (e.g. a
+     shared counter crossing two tiers at once) play one after another
+     instead of clobbering each other. ---------- */
+  // Total visible time (pop-in through fully hidden again):
+  // SPIN + CONTENT_DELAY + HOLD + CONTENT_OUT + COLLAPSE = 6s.
+  var SPIN = 480, CONTENT_DELAY = 40, HOLD = 4940, CONTENT_OUT = 180, COLLAPSE = 360;
+  var cycleTimers = [];
+  var scoreTimer = null;
+  var audioCtx = null;
+  var unlockQueue = [];
+  var queueBusy = false;
+  var achievementSound = document.getElementById('achievementSound');
+  var soundFailed = false;
+  achievementSound.addEventListener('error', function(){ soundFailed = true; });
+
+  function clearCycleTimers(){
+    cycleTimers.forEach(function(t){ clearTimeout(t); });
+    cycleTimers = [];
+    if (scoreTimer) { clearInterval(scoreTimer); scoreTimer = null; }
+  }
+  function after(ms, fn){ cycleTimers.push(setTimeout(fn, ms)); }
+
+  function animateScore(target){
+    toastScore.textContent = '0';
+    var steps = Math.max(8, Math.min(24, target || 1));
+    var stepVal = target / steps;
+    var i = 0;
+    scoreTimer = setInterval(function(){
+      i++;
+      var current = Math.min(target, Math.round(stepVal * i));
+      toastScore.textContent = String(current);
+      if (current >= target) { clearInterval(scoreTimer); scoreTimer = null; }
+    }, 380 / steps);
+  }
+
+  // Fallback synthesized ding — used only if the real soundbite file can't
+  // be loaded/played (e.g. missing next to the HTML, or a sandboxed preview
+  // with no filesystem access), so there's still some audio feedback.
+  function playSynthChime(){
+    try{
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      var notes = [
+        { freq: 784.0, start: 0,    dur: 0.14 },
+        { freq: 1046.5, start: 0.11, dur: 0.22 }
+      ];
+      notes.forEach(function(n){
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = n.freq;
+        var t0 = audioCtx.currentTime + n.start;
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.16, t0 + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + n.dur);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(t0);
+        osc.stop(t0 + n.dur + 0.02);
+      });
+    }catch(e){ /* audio not available; fail silently */ }
+  }
+
+  function playChime(){
+    if (soundFailed) { playSynthChime(); return; }
+    try{
+      achievementSound.currentTime = 0;
+      var p = achievementSound.play();
+      if (p && p.catch) p.catch(function(){ playSynthChime(); });
+    }catch(e){ playSynthChime(); }
+  }
+
+  // detail: { title, score, sound, color, viewerName }
+  function runCycleForDetail(detail, onDone){
+    applyAccentColor(detail.color || '#107c10');
+    toastEyebrow.textContent = 'Achievement unlocked';
+    toastTitle.textContent = detail.title;
+    var viewerLineParts = [];
+    if (detail.viewerName) viewerLineParts.push('unlocked by ' + detail.viewerName);
+    toastViewer.textContent = viewerLineParts.join(' · ');
+    toast.classList.toggle('has-viewer', viewerLineParts.length > 0);
+    toastScore.textContent = '0';
+
+    toast.classList.remove('hidden');
+    void toast.offsetWidth;
+    toast.classList.add('spinning');
+
+    after(SPIN, function(){
+      toast.classList.remove('spinning');
+      toast.classList.add('expanded');
+
+      after(CONTENT_DELAY, function(){
+        toast.classList.add('content-visible');
+        animateScore(detail.score);
+        if (detail.sound) playChime();
+      });
+
+      after(CONTENT_DELAY + HOLD, function(){
+        toast.classList.remove('content-visible');
+
+        after(CONTENT_OUT, function(){
+          toast.classList.remove('expanded', 'has-viewer');
+
+          after(COLLAPSE, function(){
+            toast.classList.add('hidden');
+            onDone();
+          });
+        });
+      });
+    });
+  }
+
+  function advanceQueue(){
+    if (unlockQueue.length === 0) {
+      queueBusy = false;
+      fireBtn.disabled = false;
+      return;
+    }
+    queueBusy = true;
+    fireBtn.disabled = true;
+    var detail = unlockQueue.shift();
+    runCycleForDetail(detail, advanceQueue);
+  }
+
+  function enqueueUnlock(detail){
+    unlockQueue.push(detail);
+    if (!queueBusy) {
+      clearCycleTimers();
+      advanceQueue();
+    }
+  }
+
+  fireBtn.addEventListener('click', function(){
+    enqueueUnlock({
+      title: (achTitle.value || 'Achievement Unlocked').trim(),
+      score: Math.max(0, parseInt(achScore.value, 10) || 0),
+      sound: soundOn,
+      color: achColor.value || '#107c10',
+      viewerName: ''
+    });
+  });
+
+  /* ==========================================================================
+     Streamer.bot WebSocket — receives unlock events, renders the toast
+     ========================================================================== */
+  var sbWs = null;
+  var sbManualClose = false;
+  var sbReconnectTimer = null;
+
+  function setWsState(state, text){
+    wsStatus.setAttribute('data-state', state);
+    wsStatusText.textContent = text;
+  }
+  function scheduleReconnect(){
+    clearTimeout(sbReconnectTimer);
+    sbReconnectTimer = setTimeout(sbConnect, 3000);
+  }
+  function sbConnect(){
+    var url = (wsUrlInput.value || '').trim();
+    if (!url) { setWsState('error', 'Enter a WebSocket URL'); return; }
+
+    sbManualClose = false;
+    setWsState('connecting', 'Connecting…');
+    wsToggle.textContent = 'Disconnect';
+
+    try {
+      sbWs = new WebSocket(url);
+    } catch (e) {
+      setWsState('error', 'Invalid URL');
+      wsToggle.textContent = 'Connect';
+      return;
+    }
+
+    sbWs.addEventListener('open', function(){
+      setWsState('connected', 'Connected');
+      // The connection itself only gets you the server's Hello handshake —
+      // Streamer.bot withholds every event, including the Custom broadcasts
+      // CPH.WebsocketBroadcastJson sends, until the client explicitly
+      // subscribes to that category. Without this, the overlay looks
+      // "Connected" but silently never receives anything.
+      sbWs.send(JSON.stringify({
+        request: 'Subscribe',
+        id: 'achievement-overlay',
+        events: { General: ['Custom'] }
+      }));
+    });
+
+    sbWs.addEventListener('message', function(evt){
+      var msg;
+      try { msg = JSON.parse(evt.data); } catch (e) { return; }
+      var d = (msg && msg.data) ? msg.data : msg;
+      if (!d || typeof d !== 'object' || !d.achievementName) return;
+
+      var score = (typeof d.points === 'number') ? d.points : (parseInt(d.points, 10) || 0);
+      var rawColor = d.color || achColor.value;
+      var color = /^#/.test(rawColor) ? rawColor : ('#' + rawColor);
+      enqueueUnlock({ title: d.achievementName, score: score, sound: soundOn, color: color, viewerName: d.unlockedBy || '' });
+    });
+
+    sbWs.addEventListener('close', function(){
+      sbWs = null;
+      if (sbManualClose) {
+        setWsState('idle', 'Disconnected');
+      } else {
+        setWsState('error', 'Disconnected — retrying');
+        scheduleReconnect();
+      }
+      wsToggle.textContent = 'Connect';
+    });
+
+    sbWs.addEventListener('error', function(){ /* close fires right after */ });
+  }
+  function sbDisconnect(){
+    sbManualClose = true;
+    clearTimeout(sbReconnectTimer);
+    if (sbWs) sbWs.close();
+    setWsState('idle', 'Disconnected');
+    wsToggle.textContent = 'Connect';
+  }
+  wsToggle.addEventListener('click', function(){
+    if (sbWs && sbWs.readyState === WebSocket.OPEN) sbDisconnect();
+    else sbConnect();
+  });
+  setTimeout(sbConnect, 400);
+
+  /* ==========================================================================
+     Auto-reload on file change — OBS Browser Sources cache like any browser
+     tab and don't notice the underlying file changed on disk. This polls our
+     own file and reloads when it differs from what we booted with, so an
+     edit shows up in OBS without a manual "Refresh cache of current page".
+     Defers the reload if a toast is mid-cycle so it never cuts one off live.
+     Needs fetch() to work on our own URL — some browsers block file:// pages
+     from fetching file:// resources (treated as cross-origin); if that's the
+     case here this just quietly does nothing and manual refresh still works.
+     ========================================================================== */
+  (function(){
+    if (location.protocol !== 'file:') return; // OBS-local-file scenario only
+    var selfUrl = location.href.split('#')[0].split('?')[0];
+    var initialSource = null;
+    var pendingReload = false;
+    var checking = false;
+
+    // Defer while a toast is mid-cycle OR the settings menu is open, so a
+    // reload never cuts off a live celebration or an in-progress settings
+    // tweak. Everything that IS saved (settings) lives in localStorage,
+    // which a reload never touches.
+    function isBusy(){ return queueBusy || unlockQueue.length > 0 || !settingsMenu.hidden; }
+
+    function checkForChange(){
+      if (checking) return;
+      checking = true;
+      fetch(selfUrl + '?_=' + Date.now(), { cache:'no-store' })
+        .then(function(r){ return r.text(); })
+        .then(function(text){
+          checking = false;
+          if (initialSource === null) { initialSource = text; return; }
+          if (text !== initialSource) pendingReload = true;
+          if (pendingReload && !isBusy()) location.reload();
+        })
+        .catch(function(){ checking = false; /* fetch blocked or file missing — no-op */ });
+    }
+    checkForChange(); // capture baseline
+    setInterval(checkForChange, 4000);
+  })();
+})();
+</script>
